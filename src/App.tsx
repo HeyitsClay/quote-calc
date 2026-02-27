@@ -138,7 +138,7 @@ function App() {
       return;
     }
 
-    calculateMaterialTotals();
+    const materials = calculateMaterialTotals();
     const laborP = laborHours * settings.targetHourly;
     
     const newSavedQuote: SavedQuote = {
@@ -147,7 +147,7 @@ function App() {
       date: new Date().toLocaleDateString(),
       items: [...quoteItems],
       laborHours,
-      totalPrice: price + laborP,
+      totalPrice: materials.price + laborP,
     };
 
     updateSettings({ savedQuotes: [newSavedQuote, ...settings.savedQuotes] });
@@ -171,7 +171,6 @@ function App() {
   };
 
   const exportQuoteToText = () => {
-    calculateMaterialTotals();
     const laborP = laborHours * settings.targetHourly;
     
     let text = `[LABOR]\n`;
