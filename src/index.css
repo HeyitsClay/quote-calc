@@ -376,6 +376,13 @@ select option {
 .save-input-group input { flex: 1; font-family: var(--font-main); }
 .save-input-group .btn-primary { width: auto; padding: 0 1.5rem; }
 
+/* Settings Actions */
+.settings-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
 /* Settings List */
 .persistent-item-editor {
   background: rgba(255,255,255,0.02);

@@ -170,6 +170,58 @@ function App() {
     }
   };
 
+  const exportQuoteToText = () => {
+    const { price } = calculateMaterialTotals();
+    const laborP = laborHours * settings.targetHourly;
+    
+    let text = `[LABOR]\n`;
+    text += `- Hours: ${laborHours}\n`;
+    text += `- Rate: $${settings.targetHourly}/hr\n`;
+    text += `- Labor Price: $${laborP.toFixed(2)}\n\n`;
+    
+    if (quoteItems.length > 0) {
+      text += `[MATERIALS]\n`;
+      quoteItems.forEach(qItem => {
+        const pItem = settings.persistentItems.find(i => i.id === qItem.itemId);
+        if (pItem) {
+          const markup = pItem.useCustomMarkup ? pItem.customMarkup : settings.globalMarkup;
+          const lineTotal = (pItem.cost * qItem.quantity) * (1 + markup / 100);
+          text += `- ${pItem.name}: ${qItem.quantity} x $${pItem.cost} (+${markup}%) = $${lineTotal.toFixed(2)}\n`;
+        }
+      });
+      text += `\n`;
+    }
+    
+    text += `[TOTALS]\n`;
+    text += `- Total Quote: $${totalPrice.toFixed(2)}\n`;
+    text += `- Margin: ${margin.toFixed(1)}%\n`;
+
+    navigator.clipboard.writeText(text);
+    alert('Quote copied to clipboard as plain text!');
+  };
+
+  const exportSettings = () => {
+    const data = JSON.stringify(settings);
+    navigator.clipboard.writeText(data);
+    alert('All settings and library items copied to clipboard!');
+  };
+
+  const importSettings = () => {
+    const data = prompt('Paste your settings code here:');
+    if (!data) return;
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed.persistentItems && Array.isArray(parsed.persistentItems)) {
+        setSettings(parsed);
+        alert('Settings imported successfully!');
+      } else {
+        alert('Invalid settings code.');
+      }
+    } catch (e) {
+      alert('Failed to parse settings code.');
+    }
+  };
+
   // Calculations
   const calculateLaborCost = () => {
     if (settings.wages.length === 0 || laborHours === 0) return 0;
@@ -325,7 +377,7 @@ function App() {
               </div>
               
               <div className="save-quote-area">
-                <h3>Save Quote</h3>
+                <h3>Save & Export</h3>
                 <div className="save-input-group">
                   <input 
                     type="text" 
@@ -335,6 +387,7 @@ function App() {
                   />
                   <button className="btn-primary" onClick={saveCurrentQuote}>Save</button>
                 </div>
+                <button className="btn-secondary" style={{ marginTop: '0.5rem' }} onClick={exportQuoteToText}>Export to Clipboard (Text)</button>
               </div>
             </section>
           </div>
@@ -378,6 +431,10 @@ function App() {
                   value={settings.globalMarkup}
                   onChange={(e) => updateSettings({ globalMarkup: Number(e.target.value) })}
                 />
+              </div>
+              <div className="settings-actions">
+                <button className="btn-secondary" onClick={exportSettings}>Export All Settings</button>
+                <button className="btn-secondary" onClick={importSettings}>Import Settings</button>
               </div>
             </section>
 
