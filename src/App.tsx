@@ -222,6 +222,31 @@ function App() {
     }
   };
 
+  const exportSavedQuotes = () => {
+    const data = JSON.stringify(settings.savedQuotes);
+    navigator.clipboard.writeText(data);
+    alert('Saved quotes list copied to clipboard!');
+  };
+
+  const importSavedQuotes = () => {
+    const data = prompt('Paste your saved quotes code here:');
+    if (!data) return;
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        // Merge with existing and remove duplicates by ID
+        const newQuotes = [...parsed, ...settings.savedQuotes];
+        const uniqueQuotes = Array.from(new Map(newQuotes.map(q => [q.id, q])).values());
+        updateSettings({ savedQuotes: uniqueQuotes });
+        alert(`${parsed.length} quotes imported and merged!`);
+      } else {
+        alert('Invalid quotes code.');
+      }
+    } catch (e) {
+      alert('Failed to parse quotes code.');
+    }
+  };
+
   // Calculations
   const calculateLaborCost = () => {
     if (settings.wages.length === 0 || laborHours === 0) return 0;
@@ -394,7 +419,11 @@ function App() {
         ) : activeTab === 'history' ? (
           <div className="history-view">
             <section className="card">
-              <h3>Saved Quotes</h3>
+              <h3>Quote History</h3>
+              <div className="settings-actions" style={{ marginBottom: '1.5rem' }}>
+                <button className="btn-secondary" onClick={exportSavedQuotes}>Backup Quotes</button>
+                <button className="btn-secondary" onClick={importSavedQuotes}>Restore Quotes</button>
+              </div>
               <div className="saved-quotes-list">
                 {settings.savedQuotes.length === 0 ? (
                   <p className="help-text">No saved quotes yet.</p>
