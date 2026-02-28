@@ -210,7 +210,7 @@ function App() {
                         <Input 
                           type="number" 
                           value={qItem.quantity} 
-                          className="input-qty"
+                          className="input-qty mobile-width-qty"
                           containerClassName="no-margin"
                           style={{ width: '60px', textAlign: 'center' }}
                           onChange={e => {
@@ -219,7 +219,7 @@ function App() {
                             setQuoteItems(next);
                           }}
                         />
-                        <div style={{ textAlign: 'right', minWidth: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
+                        <div className="mobile-min-width-stack" style={{ textAlign: 'right', minWidth: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
                           <div style={{ fontSize: '0.75rem' }}>
                             <span className="item-subtext">Cost:</span> <span className="mono-val danger">${itemCost.toFixed(2)}</span>
                           </div>
@@ -227,7 +227,7 @@ function App() {
                             <span className="item-subtext">Profit:</span> <span className="mono-val success">${(itemPrice - itemCost).toFixed(2)}</span>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right', minWidth: '100px' }}>
+                        <div className="mobile-min-width-total" style={{ textAlign: 'right', minWidth: '100px' }}>
                            <div className="item-subtext">Total Price</div>
                            <div className="mono-val bold">${itemPrice.toFixed(2)}</div>
                         </div>

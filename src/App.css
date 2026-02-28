@@ -337,6 +337,54 @@ input[type=number] {
 .input-lg { height: 54px !important; font-size: 1.4rem !important; }
 .input-qty { height: 42px !important; font-size: 1.05rem !important; }
 
+/* Mobile Optimization */
+@media (max-width: 600px) {
+  .app-container { padding: 0.5rem; }
+  
+  .hud-grid { 
+    grid-template-columns: 1fr !important; 
+    gap: 1rem !important; 
+  }
+
+  .hud-grid.grid-divider > div:first-child { 
+    padding-right: 0 !important; 
+    border-right: none !important; 
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+
+  .hud-grid.grid-divider > div:last-child { 
+    padding-left: 0 !important; 
+    padding-top: 1rem;
+  }
+
+  .item-row {
+    gap: 0.5rem !important;
+    padding: 10px 8px !important;
+  }
+
+  .item-name-col {
+    flex: 1.5 !important;
+    min-width: 0;
+  }
+
+  .item-name {
+    font-size: 0.85rem !important;
+    line-height: 1.2;
+  }
+
+  .item-meta-col {
+    flex: 2 !important;
+    gap: 0.4rem !important;
+    justify-content: flex-end;
+  }
+
+  /* Utility to override inline widths on mobile */
+  .mobile-width-qty { width: 45px !important; }
+  .mobile-min-width-stack { min-width: 85px !important; }
+  .mobile-min-width-total { min-width: 80px !important; }
+}
+
 /* Toast */
 .toast-container { 
   position: fixed; 
