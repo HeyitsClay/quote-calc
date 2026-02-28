@@ -379,18 +379,23 @@ select option { background-color: #1a1d23; color: #fff; }
   color: #fff;
   background: var(--danger);
   border: none;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-content: center;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 1.2rem;
-  line-height: 1;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 0;
   padding: 0;
+  padding-bottom: 2px;
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);
+}
+
+.btn-danger:hover {
+  filter: brightness(1.1);
 }
 
 /* Settings List */

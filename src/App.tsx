@@ -186,12 +186,11 @@ function App() {
   };
 
   const exportQuoteToText = () => {
-    const laborP = laborHours * settings.targetHourly;
-    
     let text = `[LABOR]\n`;
     text += `- Hours: ${laborHours}\n`;
     text += `- Rate: $${settings.targetHourly}/hr\n`;
-    text += `- Labor Price: $${laborP.toFixed(2)}\n\n`;
+    text += `- Labor Cost (Wages): $${laborCost.toFixed(2)}\n`;
+    text += `- Labor Price (Billable): $${laborPrice.toFixed(2)}\n\n`;
     
     if (quoteItems.length > 0) {
       text += `[MATERIALS]\n`;
