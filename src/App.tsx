@@ -195,14 +195,17 @@ function App() {
           <div className="view">
             <section className="card">
               <h3>Labor Cost</h3>
-              <div className="hud-row">
-                <label>Total Hours</label>
-                <input type="number" value={laborHours || ''} onChange={(e) => setLaborHours(Number(e.target.value))} />
-              </div>
-              <div className="hud-data-list">
-                <div className="hud-data-row"><span>Wages:</span><span className="mono">${laborCost.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Billable:</span><span className="mono">${laborPrice.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Profit:</span><span className="mono success">${(laborPrice - laborCost).toFixed(2)}</span></div>
+              <div className="labor-split-container">
+                <div className="labor-left">
+                  <label>Total Hours</label>
+                  <input type="number" value={laborHours || ''} onChange={(e) => setLaborHours(Number(e.target.value))} />
+                </div>
+                <div className="vertical-divider"></div>
+                <div className="labor-right">
+                  <div className="hud-data-row"><span>Wages:</span><span className="mono-val">${laborCost.toFixed(2)}</span></div>
+                  <div className="hud-data-row"><span>Billable:</span><span className="mono-val">${laborPrice.toFixed(2)}</span></div>
+                  <div className="hud-data-row"><span className="success">Profit:</span><span className="mono-val success">${(laborPrice - laborCost).toFixed(2)}</span></div>
+                </div>
               </div>
             </section>
 
@@ -223,18 +226,18 @@ function App() {
                   const itemPrice = itemCost * (1 + markup / 100);
                   const itemProfit = itemPrice - itemCost;
                   return (
-                    <div key={idx} className="quote-item-row-complex">
-                      <div className="item-main">
+                    <div key={idx} className="item-row-hud">
+                      <div className="item-name-meta">
                         <span className="name">{pItem.name}</span>
-                        <div className="actions">
-                          <input type="number" value={qItem.quantity} onChange={(e) => updateQuoteItemQuantity(idx, Number(e.target.value))} />
-                          <button className="btn-danger" onClick={() => removeFromQuote(idx)}></button>
-                        </div>
+                        <span className="dimmed">Cost: ${pItem.cost.toFixed(2)} | Markup: {markup}%</span>
                       </div>
-                      <div className="item-details">
-                        <div className="detail"><span>Cost:</span><span className="mono">${itemCost.toFixed(2)}</span></div>
-                        <div className="detail"><span>Markup:</span><span className="mono">{markup}%</span></div>
-                        <div className="detail success"><span>(+Profit):</span><span className="mono">${itemProfit.toFixed(2)}</span></div>
+                      <div className="item-price-col">
+                        <span className="total-price mono-val">${itemPrice.toFixed(2)}</span>
+                        <span className="profit-sub success mono-val">(+${itemProfit.toFixed(2)})</span>
+                      </div>
+                      <div className="item-action-group">
+                        <input type="number" value={qItem.quantity} onChange={(e) => updateQuoteItemQuantity(idx, Number(e.target.value))} />
+                        <button className="btn-danger" onClick={() => removeFromQuote(idx)}></button>
                       </div>
                     </div>
                   );
@@ -245,12 +248,12 @@ function App() {
             <section className="card summary-card">
               <h3>Total Summary</h3>
               <div className="hud-data-list">
-                <div className="hud-data-row"><span>Material Cost:</span><span className="mono">${materials.cost.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Labor Price:</span><span className="mono">${laborPrice.toFixed(2)}</span></div>
+                <div className="hud-data-row"><span>Material Cost:</span><span className="mono-val">${materials.cost.toFixed(2)}</span></div>
+                <div className="hud-data-row"><span>Labor Price:</span><span className="mono-val">${laborPrice.toFixed(2)}</span></div>
                 <hr/>
-                <div className="hud-data-row highlight"><span>Total Quote Amount:</span><span className="mono cyan">${totalPrice.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Net Profit:</span><span className="mono success">${profit.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Margin:</span><span className="mono success">{margin.toFixed(1)}%</span></div>
+                <div className="hud-data-row highlight"><span>Total Quote Amount:</span><span className="mono-val cyan">${totalPrice.toFixed(2)}</span></div>
+                <div className="hud-data-row"><span>Net Profit:</span><span className="mono-val bold-success">${profit.toFixed(2)}</span></div>
+                <div className="hud-data-row"><span>Margin:</span><span className="mono-val bold-success">{margin.toFixed(1)}%</span></div>
               </div>
               <div className="footer-actions">
                 <div className="save-row">
@@ -306,7 +309,7 @@ function App() {
                       <span className="date">{quote.date}</span>
                     </div>
                     <div className="meta">
-                      <span className="mono cyan">${quote.totalPrice.toFixed(2)}</span>
+                      <span className="mono-val cyan">${quote.totalPrice.toFixed(2)}</span>
                       <button className="btn-danger" onClick={() => deleteSavedQuote(quote.id)}></button>
                     </div>
                   </div>
@@ -318,11 +321,11 @@ function App() {
           <div className="view">
             <section className="card">
               <h3>Global Settings</h3>
-              <div className="hud-row">
+              <div className="grid-2-col">
                 <label>Target Hourly Rate ($)</label>
                 <input type="number" value={settings.targetHourly} onChange={(e) => updateSettings({ targetHourly: Number(e.target.value) })} />
               </div>
-              <div className="hud-row">
+              <div className="grid-2-col">
                 <label>Global Material Markup (%)</label>
                 <input type="number" value={settings.globalMarkup} onChange={(e) => updateSettings({ globalMarkup: Number(e.target.value) })} />
               </div>
@@ -331,9 +334,9 @@ function App() {
             <section className="card">
               <h3>Labor Wages</h3>
               {settings.wages.map((wage, idx) => (
-                <div key={idx} className="hud-row">
+                <div key={idx} className="wage-row">
                   <label>Hourly Wage {idx + 1}</label>
-                  <div className="wage-input">
+                  <div className="wage-input-group">
                     <input type="number" value={wage} onChange={(e) => updateWage(idx, Number(e.target.value))} />
                     <button className="btn-danger" onClick={() => removeWage(idx)}></button>
                   </div>
@@ -346,17 +349,17 @@ function App() {
               <h3>Line Items</h3>
             {settings.persistentItems.map((item) => (
                 <div key={item.id} className="item-editor-card">
-                  <div className="header">
-                    <span className="drag">⠿</span>
+                  <div className="editor-top-row">
+                    <span className="drag-handle">⠿</span>
                     <input type="text" value={item.name} onChange={(e) => updatePersistentItem(item.id, { name: e.target.value })} placeholder="Item Name" />
                     <button className="btn-danger" onClick={() => removePersistentItem(item.id)}></button>
                   </div>
-                  <div className="details-grid">
+                  <div className="editor-bottom-row">
                     <div className="input-group">
-                      <label>COST</label>
+                      <label className="field-label">COST</label>
                       <input type="number" value={item.cost || ''} onChange={(e) => updatePersistentItem(item.id, { cost: Number(e.target.value) })} />
                     </div>
-                    <div className="input-group">
+                    <div className="markup-lock">
                       <label className="checkbox"><input type="checkbox" checked={item.useCustomMarkup} onChange={(e) => updatePersistentItem(item.id, { useCustomMarkup: e.target.checked })} />MARKUP %</label>
                       {item.useCustomMarkup ? (
                         <input type="number" value={item.customMarkup} onChange={(e) => updatePersistentItem(item.id, { customMarkup: Number(e.target.value) })} />
