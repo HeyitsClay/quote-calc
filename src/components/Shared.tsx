@@ -65,6 +65,6 @@ export const Card = ({ children, title, className, actions }: {
   </section>
 );
 
-export const Toast = ({ message }: { message: string }) => (
-  <div className="toast">{message}</div>
+export const Toast = ({ message, type = "success" }: { message: string; type?: "success" | "error" }) => (
+  <div className={`toast toast-${type}`}>{message}</div>
 );

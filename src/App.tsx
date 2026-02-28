@@ -28,7 +28,7 @@ function App() {
     return localStorage.getItem('quote_builder_name') || '';
   });
   const [searchValue, setSearchValue] = useState('');
-  const [toasts, setToasts] = useState<{ id: string; message: string }[]>([]);
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'error' }[]>([]);
 
   const filteredItems = useMemo(() => {
     return settings.persistentItems.filter(item => 
@@ -36,9 +36,9 @@ function App() {
     );
   }, [settings.persistentItems, searchValue]);
 
-  const addToast = (message: string) => {
+  const addToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = generateId();
-    setToasts(prev => [...prev, { id, message }]);
+    setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 3000);
@@ -93,7 +93,7 @@ function App() {
 
   const handleSaveQuote = () => {
     if (!quoteName) {
-      addToast('Please enter a quote name.');
+      addToast('Please enter a quote name.', 'error');
       return;
     }
     const newQuote: SavedQuote = {
@@ -106,7 +106,7 @@ function App() {
     };
     updateSettings({ savedQuotes: [newQuote, ...settings.savedQuotes] });
     setQuoteName('');
-    addToast('Quote saved to history!');
+    addToast('Quote saved to history!', 'success');
   };
 
   const handleClearQuote = () => {
@@ -114,7 +114,7 @@ function App() {
       setQuoteName('');
       setQuoteItems([]);
       setLaborHours(0);
-      addToast('Quote cleared.');
+      addToast('Quote cleared.', 'success');
     }
   };
 
@@ -359,7 +359,7 @@ function App() {
                   ].join('\n');
 
                   navigator.clipboard.writeText(summary);
-                  addToast('Detailed summary copied to clipboard!');
+                  addToast('Detailed summary copied to clipboard!', 'success');
                 }}
               >
                 Export to Clipboard
@@ -392,7 +392,7 @@ function App() {
                       setQuoteItems(quote.items);
                       setLaborHours(quote.laborHours);
                       setQuoteName(quote.name);
-                      addToast(`Loaded quote: ${quote.name}`);
+                      addToast(`Loaded quote: ${quote.name}`, 'success');
                     }}
                   >
                     <div className="item-name-col">
@@ -536,7 +536,7 @@ function App() {
                   onClick={() => {
                     const data = JSON.stringify(settings, null, 2);
                     navigator.clipboard.writeText(data);
-                    addToast('Settings copied to clipboard!');
+                    addToast('Settings copied to clipboard!', 'success');
                   }}
                 >
                   Export Settings
@@ -551,13 +551,13 @@ function App() {
                       if (parsed && typeof parsed === 'object' && 'targetHourly' in parsed) {
                         if (confirm('Importing will overwrite your current settings and item library. Continue?')) {
                           setSettings(parsed);
-                          addToast('Settings imported successfully!');
+                          addToast('Settings imported successfully!', 'success');
                         }
                       } else {
-                        addToast('Invalid settings data in clipboard.');
+                        addToast('Invalid settings data in clipboard.', 'error');
                       }
                     } catch (err) {
-                      addToast('Failed to read from clipboard.');
+                      addToast('Failed to read from clipboard.', 'error');
                     }
                   }}
                 >
@@ -571,7 +571,7 @@ function App() {
 
       <div className="toast-container">
         {toasts.map(toast => (
-          <Toast key={toast.id} message={toast.message} />
+          <Toast key={toast.id} message={toast.message} type={toast.type} />
         ))}
       </div>
     </div>
