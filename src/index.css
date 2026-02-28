@@ -375,28 +375,44 @@ select option { background-color: #1a1d23; color: #fff; }
   text-transform: uppercase;
 }
 
+/* RE-IMAGINED DELETE BUTTON */
 .btn-danger {
-  color: #fff;
-  background: var(--danger);
-  border: none;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-content: center;
+  all: unset;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 1.1rem;
-  line-height: 0;
-  padding: 0;
-  padding-bottom: 2px;
-  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  color: var(--danger);
+  box-sizing: border-box;
 }
 
 .btn-danger:hover {
-  filter: brightness(1.1);
+  background: var(--danger);
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
 }
+
+.btn-danger::before, 
+.btn-danger::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+.btn-danger::before { transform: rotate(45deg); }
+.btn-danger::after { transform: rotate(-45deg); }
 
 /* Settings List */
 .persistent-item-editor {

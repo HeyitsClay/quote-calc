@@ -303,7 +303,7 @@ function App() {
             <span>Install as a real app for a better experience!</span>
             <p>Tap the <b>Share</b> icon then <b>'Add to Home Screen'</b></p>
           </div>
-          <button onClick={() => setShowNudge(false)}>×</button>
+          <button className="btn-danger" onClick={() => setShowNudge(false)}></button>
         </div>
       )}
       <nav className="tabs">
@@ -399,7 +399,7 @@ function App() {
                           onChange={(e) => updateQuoteItemQuantity(idx, Number(e.target.value))}
                           min="1"
                         />
-                        <button className="btn-danger" onClick={() => removeFromQuote(idx)}>×</button>
+                        <button className="btn-danger" onClick={() => removeFromQuote(idx)}> </button>
                       </div>
                     </div>
                   );
@@ -456,7 +456,7 @@ function App() {
                         <span className="quote-name">{quote.name}</span>
                         <span className="quote-meta">{quote.date} • ${quote.totalPrice.toFixed(2)}</span>
                       </div>
-                      <button className="btn-danger" onClick={() => deleteSavedQuote(quote.id)}>×</button>
+                      <button className="btn-danger" onClick={() => deleteSavedQuote(quote.id)}> </button>
                     </div>
                   ))
                 )}
@@ -500,7 +500,7 @@ function App() {
                       onChange={(e) => updateWage(idx, Number(e.target.value))}
                       placeholder="Wage $/hr"
                     />
-                    <button className="btn-danger" onClick={() => removeWage(idx)}>×</button>
+                    <button className="btn-danger" onClick={() => removeWage(idx)}> </button>
                   </div>
                 ))}
                 <button className="btn-secondary" onClick={addWage}>+ Add Wage</button>
@@ -547,7 +547,7 @@ function App() {
                           />
                         )}
                       </div>
-                      <button className="btn-danger" onClick={() => removePersistentItem(item.id)}>×</button>
+                      <button className="btn-danger" onClick={() => removePersistentItem(item.id)}> </button>
                     </div>
                   </div>
                 ))}
