@@ -341,21 +341,34 @@ input[type=number] {
 @media (max-width: 600px) {
   .app-container { padding: 0.5rem; }
   
-  .hud-grid { 
+  /* Only stack the summary card rows on mobile */
+  .summary-card .hud-grid { 
     grid-template-columns: 1fr !important; 
     gap: 1rem !important; 
   }
 
-  .hud-grid.grid-divider > div:first-child { 
+  .summary-card .hud-grid.grid-divider > div:first-child { 
     padding-right: 0 !important; 
     border-right: none !important; 
     border-bottom: 1px solid var(--border);
     padding-bottom: 1rem;
   }
 
-  .hud-grid.grid-divider > div:last-child { 
+  .summary-card .hud-grid.grid-divider > div:last-child { 
     padding-left: 0 !important; 
     padding-top: 1rem;
+  }
+
+  .hud-grid {
+    gap: 0.75rem !important;
+  }
+
+  .hud-grid.grid-divider > div:first-child {
+    padding-right: 0.75rem !important;
+  }
+
+  .hud-grid.grid-divider > div:last-child {
+    padding-left: 0.75rem !important;
   }
 
   .item-row {
