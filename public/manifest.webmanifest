@@ -1,0 +1,17 @@
+{
+  "name": "Quote Calc",
+  "short_name": "QuoteCalc",
+  "description": "Professional mobile quote builder",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060606",
+  "theme_color": "#22d3ee",
+  "icons": [
+    {
+      "src": "vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

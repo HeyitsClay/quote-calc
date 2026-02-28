@@ -43,6 +43,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 function App() {
   const [activeTab, setActiveTab] = useState<'quote' | 'settings' | 'history'>('quote');
+  const [showNudge, setShowNudge] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem('quote_builder_settings');
@@ -66,6 +67,20 @@ function App() {
   useEffect(() => {
     localStorage.setItem('quote_builder_settings', JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    // Check if it's already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+                       || (window.navigator as any).standalone 
+                       || document.referrer.includes('android-app://');
+
+    // Only show on mobile browsers that aren't installed yet
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile && !isStandalone) {
+      setShowNudge(true);
+    }
+  }, []);
 
   // Settings Actions
   const updateSettings = (updates: Partial<AppSettings>) => {
@@ -283,6 +298,15 @@ function App() {
 
   return (
     <div className="app-container">
+      {showNudge && (
+        <div className="install-nudge">
+          <div className="nudge-content">
+            <span>Install as a real app for a better experience!</span>
+            <p>Tap the <b>Share</b> icon then <b>'Add to Home Screen'</b></p>
+          </div>
+          <button onClick={() => setShowNudge(false)}>×</button>
+        </div>
+      )}
       <nav className="tabs">
         <button
           className={activeTab === 'quote' ? 'active' : ''}
