@@ -345,34 +345,57 @@ select option { background-color: #1a1d23; color: #fff; }
 
 .save-input-group .btn-primary {
   width: auto;
-  padding: 0 1.5rem;
+  padding: 0.85rem 1.5rem;
 }
 
 /* Buttons */
 .btn-primary {
-  background: var(--accent);
-  color: var(--bg);
-  border: none;
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
   padding: 0.85rem;
   border-radius: var(--radius);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+  color: var(--accent);
   font-weight: 700;
   font-size: var(--fs-sm);
-  width: 100%;
-  cursor: pointer;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--bg);
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
 }
 
 .btn-secondary {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--accent);
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
   padding: 0.75rem;
   border-radius: var(--radius);
-  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   font-weight: 600;
   font-size: var(--fs-sm);
-  cursor: pointer;
   text-transform: uppercase;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-bright);
+  color: #fff;
+  border-color: var(--text-muted);
+  transform: scale(1.02);
 }
 
 /* RE-IMAGINED DELETE BUTTON */
