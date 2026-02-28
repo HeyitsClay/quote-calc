@@ -221,10 +221,16 @@ function App() {
                         />
                         <div className="mobile-min-width-stack" style={{ textAlign: 'right', minWidth: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
                           <div style={{ fontSize: '0.75rem' }}>
-                            <span className="item-subtext">Cost:</span> <span className="mono-val danger">${itemCost.toFixed(2)}</span>
+                            <span className="item-subtext">
+                              <span className="hide-mobile">Cost:</span>
+                              <span className="show-mobile">C:</span>
+                            </span> <span className="mono-val danger">${itemCost.toFixed(2)}</span>
                           </div>
                           <div style={{ fontSize: '0.75rem' }}>
-                            <span className="item-subtext">Profit:</span> <span className="mono-val success">${(itemPrice - itemCost).toFixed(2)}</span>
+                            <span className="item-subtext">
+                              <span className="hide-mobile">Profit:</span>
+                              <span className="show-mobile">P:</span>
+                            </span> <span className="mono-val success">${(itemPrice - itemCost).toFixed(2)}</span>
                           </div>
                         </div>
                         <div className="mobile-min-width-total" style={{ textAlign: 'right', minWidth: '100px' }}>

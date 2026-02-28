@@ -383,7 +383,12 @@ input[type=number] {
   .mobile-width-qty { width: 45px !important; }
   .mobile-min-width-stack { min-width: 85px !important; }
   .mobile-min-width-total { min-width: 80px !important; }
+
+  .hide-mobile { display: none !important; }
+  .show-mobile { display: inline !important; }
 }
+
+.show-mobile { display: none; }
 
 /* Toast */
 .toast-container { 
