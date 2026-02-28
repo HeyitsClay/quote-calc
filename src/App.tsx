@@ -202,6 +202,7 @@ function App() {
               <div className="hud-data-list">
                 <div className="hud-data-row"><span>Wages:</span><span className="mono">${laborCost.toFixed(2)}</span></div>
                 <div className="hud-data-row"><span>Billable:</span><span className="mono">${laborPrice.toFixed(2)}</span></div>
+                <div className="hud-data-row"><span>Profit:</span><span className="mono success">${(laborPrice - laborCost).toFixed(2)}</span></div>
               </div>
             </section>
 
@@ -217,12 +218,23 @@ function App() {
                 {quoteItems.map((qItem, idx) => {
                   const pItem = settings.persistentItems.find(i => i.id === qItem.itemId);
                   if (!pItem) return null;
+                  const itemCost = pItem.cost * qItem.quantity;
+                  const markup = pItem.useCustomMarkup ? pItem.customMarkup : settings.globalMarkup;
+                  const itemPrice = itemCost * (1 + markup / 100);
+                  const itemProfit = itemPrice - itemCost;
                   return (
-                    <div key={idx} className="quote-item-row">
-                      <span className="name">{pItem.name}</span>
-                      <div className="actions">
-                        <input type="number" value={qItem.quantity} onChange={(e) => updateQuoteItemQuantity(idx, Number(e.target.value))} />
-                        <button className="btn-danger" onClick={() => removeFromQuote(idx)}></button>
+                    <div key={idx} className="quote-item-row-complex">
+                      <div className="item-main">
+                        <span className="name">{pItem.name}</span>
+                        <div className="actions">
+                          <input type="number" value={qItem.quantity} onChange={(e) => updateQuoteItemQuantity(idx, Number(e.target.value))} />
+                          <button className="btn-danger" onClick={() => removeFromQuote(idx)}></button>
+                        </div>
+                      </div>
+                      <div className="item-details">
+                        <div className="detail"><span>Cost:</span><span className="mono">${itemCost.toFixed(2)}</span></div>
+                        <div className="detail"><span>Markup:</span><span className="mono">{markup}%</span></div>
+                        <div className="detail success"><span>(+Profit):</span><span className="mono">${itemProfit.toFixed(2)}</span></div>
                       </div>
                     </div>
                   );
@@ -234,29 +246,65 @@ function App() {
               <h3>Total Summary</h3>
               <div className="hud-data-list">
                 <div className="hud-data-row"><span>Material Cost:</span><span className="mono">${materials.cost.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Material Price:</span><span className="mono">${materials.price.toFixed(2)}</span></div>
+                <div className="hud-data-row"><span>Labor Price:</span><span className="mono">${laborPrice.toFixed(2)}</span></div>
                 <hr/>
-                <div className="hud-data-row highlight"><span>Total Quote:</span><span className="mono cyan">${totalPrice.toFixed(2)}</span></div>
+                <div className="hud-data-row highlight"><span>Total Quote Amount:</span><span className="mono cyan">${totalPrice.toFixed(2)}</span></div>
                 <div className="hud-data-row"><span>Net Profit:</span><span className="mono success">${profit.toFixed(2)}</span></div>
                 <div className="hud-data-row"><span>Margin:</span><span className="mono success">{margin.toFixed(1)}%</span></div>
               </div>
               <div className="footer-actions">
                 <div className="save-row">
                   <input type="text" placeholder="Name this quote..." value={quoteName} onChange={(e) => setQuoteName(e.target.value)} />
-                  <button className="btn-primary" onClick={saveCurrentQuote}>Save</button>
+                  <button className="btn-primary" onClick={saveCurrentQuote}>SAVE</button>
                 </div>
-                <button className="btn-secondary full-width" onClick={exportQuoteToText}>Export to Clipboard</button>
+                <button className="btn-secondary full-width" onClick={exportQuoteToText}>EXPORT TO CLIPBOARD</button>
               </div>
             </section>
           </div>
         ) : activeTab === 'history' ? (
           <div className="view">
             <section className="card">
-              <h3>Quote History</h3>
+              <div className="card-header-actions">
+                <h3>Quote History</h3>
+                <div className="header-btns">
+                  <button className="btn-secondary-sm" onClick={() => {
+                    const data = JSON.stringify(settings);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `quote-calc-backup-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                  }}>BACKUP</button>
+                  <button className="btn-secondary-sm" onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        try {
+                          const parsed = JSON.parse(e.target?.result as string);
+                          updateSettings(parsed);
+                          alert('Restored');
+                        } catch (err) {
+                          alert('Invalid backup file');
+                        }
+                      };
+                      reader.readAsText(file);
+                    };
+                    input.click();
+                  }}>RESTORE</button>
+                </div>
+              </div>
               <div className="history-list">
                 {settings.savedQuotes.map(quote => (
                   <div key={quote.id} className="history-row">
-                    <span onClick={() => loadSavedQuote(quote)}>{quote.name}</span>
+                    <div className="info" onClick={() => loadSavedQuote(quote)}>
+                      <span className="name">{quote.name}</span>
+                      <span className="date">{quote.date}</span>
+                    </div>
                     <div className="meta">
                       <span className="mono cyan">${quote.totalPrice.toFixed(2)}</span>
                       <button className="btn-danger" onClick={() => deleteSavedQuote(quote.id)}></button>
@@ -271,11 +319,11 @@ function App() {
             <section className="card">
               <h3>Global Settings</h3>
               <div className="hud-row">
-                <label>Target Hourly ($)</label>
+                <label>Target Hourly Rate ($)</label>
                 <input type="number" value={settings.targetHourly} onChange={(e) => updateSettings({ targetHourly: Number(e.target.value) })} />
               </div>
               <div className="hud-row">
-                <label>Global Markup (%)</label>
+                <label>Global Material Markup (%)</label>
                 <input type="number" value={settings.globalMarkup} onChange={(e) => updateSettings({ globalMarkup: Number(e.target.value) })} />
               </div>
             </section>
@@ -284,14 +332,14 @@ function App() {
               <h3>Labor Wages</h3>
               {settings.wages.map((wage, idx) => (
                 <div key={idx} className="hud-row">
-                  <label>Hourly {idx + 1}</label>
+                  <label>Hourly Wage {idx + 1}</label>
                   <div className="wage-input">
                     <input type="number" value={wage} onChange={(e) => updateWage(idx, Number(e.target.value))} />
                     <button className="btn-danger" onClick={() => removeWage(idx)}></button>
                   </div>
                 </div>
               ))}
-              <button className="btn-secondary" onClick={addWage}>+ Add Wage</button>
+              <button className="btn-secondary" onClick={addWage}>+ ADD WAGE</button>
             </section>
 
             <section className="card">
@@ -303,19 +351,23 @@ function App() {
                     <input type="text" value={item.name} onChange={(e) => updatePersistentItem(item.id, { name: e.target.value })} placeholder="Item Name" />
                     <button className="btn-danger" onClick={() => removePersistentItem(item.id)}></button>
                   </div>
-                  <div className="details">
+                  <div className="details-grid">
                     <div className="input-group">
-                      <label>Cost</label>
+                      <label>COST</label>
                       <input type="number" value={item.cost || ''} onChange={(e) => updatePersistentItem(item.id, { cost: Number(e.target.value) })} />
                     </div>
-                    <div className="markup-group">
-                      <label className="checkbox"><input type="checkbox" checked={item.useCustomMarkup} onChange={(e) => updatePersistentItem(item.id, { useCustomMarkup: e.target.checked })} />Markup %</label>
-                      {item.useCustomMarkup && <input type="number" value={item.customMarkup} onChange={(e) => updatePersistentItem(item.id, { customMarkup: Number(e.target.value) })} />}
+                    <div className="input-group">
+                      <label className="checkbox"><input type="checkbox" checked={item.useCustomMarkup} onChange={(e) => updatePersistentItem(item.id, { useCustomMarkup: e.target.checked })} />MARKUP %</label>
+                      {item.useCustomMarkup ? (
+                        <input type="number" value={item.customMarkup} onChange={(e) => updatePersistentItem(item.id, { customMarkup: Number(e.target.value) })} />
+                      ) : (
+                        <input type="text" value={`${settings.globalMarkup}% (Global)`} disabled />
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
-              <button className="btn-secondary" onClick={addPersistentItem}>+ Add Item</button>
+              <button className="btn-secondary" onClick={addPersistentItem}>+ ADD ITEM</button>
             </section>
           </div>
         )}

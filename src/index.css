@@ -7,7 +7,7 @@
   --bg: #0a0c10;
   --surface: #1a1d23;
   --border: #333;
-  --accent: #22d3ee;
+  --accent: #00FFFF;
   --success: #00FF41;
   --danger: #f43f5e;
   
@@ -59,6 +59,24 @@ h3 {
   padding-bottom: 10px;
 }
 
+.card-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.card-header-actions h3 {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.header-btns {
+  display: flex;
+  gap: 8px;
+}
+
 /* INPUTS & GLOW RESET */
 input, select {
   all: unset;
@@ -76,11 +94,16 @@ input, select {
 
 input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
 input[type="number"] {
   font-family: var(--font-mono);
+}
+
+input:disabled {
+  opacity: 0.5;
+  background-color: rgba(255,255,255,0.05);
 }
 
 /* LABOR & SETTINGS ROW ALIGNMENT */
@@ -98,13 +121,13 @@ input[type="number"] {
 }
 
 .hud-row input {
-  width: 120px;
+  width: 140px;
 }
 
 .wage-input {
   display: flex;
   gap: 10px;
-  width: 160px;
+  width: 180px;
 }
 
 /* LINE ITEMS - SETTINGS */
@@ -132,34 +155,79 @@ input[type="number"] {
   font-weight: 700;
 }
 
-.item-editor-card .details {
+.details-grid {
   display: flex;
-  align-items: flex-end; /* Baseline logic */
+  align-items: flex-end;
   gap: 20px;
 }
 
-.item-editor-card .details .input-group {
+.details-grid .input-group {
   flex: 1;
 }
 
-.item-editor-card .details label {
+.details-grid label {
   display: block;
   font-size: 11px;
   font-weight: 700;
   margin-bottom: 5px;
+  text-transform: uppercase;
+  color: #94a3b8;
 }
 
-.markup-group {
-  flex: 1;
-}
-
-.markup-group .checkbox {
+.checkbox {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+}
+
+/* QUOTE ITEM LIST */
+.quote-item-row-complex {
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.quote-item-row-complex .item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.quote-item-row-complex .item-main .name {
   font-weight: 700;
-  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.quote-item-row-complex .item-main .actions {
+  display: flex;
+  gap: 10px;
+}
+
+.quote-item-row-complex .item-main .actions input {
+  width: 60px;
+  text-align: center;
+}
+
+.quote-item-row-complex .item-details {
+  display: flex;
+  gap: 20px;
+}
+
+.quote-item-row-complex .item-details .detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quote-item-row-complex .item-details .detail span:first-child {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.quote-item-row-complex .item-details .detail span:last-child {
+  font-size: 13px;
 }
 
 /* TOTAL SUMMARY - DATA ANCHORING */
@@ -181,9 +249,16 @@ input[type="number"] {
   color: #94a3b8;
 }
 
-.hud-data-row.highlight span:last-child {
-  font-size: 24px;
+.hud-data-row.highlight span:first-child {
+  font-size: 16px;
   font-weight: 800;
+  color: var(--accent);
+}
+
+.hud-data-row.highlight span:last-child {
+  font-size: 28px;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
 hr {
@@ -194,7 +269,7 @@ hr {
 }
 
 /* BUTTONS */
-.btn-primary, .btn-secondary {
+.btn-primary, .btn-secondary, .btn-secondary-sm {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
@@ -206,10 +281,23 @@ hr {
   font-weight: 700;
   text-transform: uppercase;
   font-size: 12px;
+  transition: all 0.2s ease;
 }
 
 .btn-primary { background-color: var(--accent); color: #000; padding: 0 20px; }
+.btn-primary:hover { filter: brightness(1.1); box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+
 .btn-secondary { border: 1px solid var(--border); color: var(--accent); width: 100%; margin-top: 10px; }
+.btn-secondary:hover { background: rgba(0, 255, 255, 0.05); border-color: var(--accent); }
+
+.btn-secondary-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 10px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+}
+.btn-secondary-sm:hover { border-color: var(--accent); background: rgba(0, 255, 255, 0.05); }
 
 .btn-danger {
   all: unset;
@@ -225,7 +313,10 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
+
+.btn-danger:hover { background: rgba(244, 63, 94, 0.2); border-color: var(--danger); }
 
 .btn-danger::before, .btn-danger::after {
   content: ''; position: absolute; width: 14px; height: 2px; background-color: currentColor;
@@ -246,32 +337,33 @@ hr {
   margin-bottom: 10px;
 }
 
-/* QUOTE ITEM LIST */
-.quote-item-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.quote-item-row .actions {
-  display: flex;
-  gap: 10px;
-}
-
-.quote-item-row .actions input {
-  width: 60px;
-  text-align: center;
-}
-
 /* HISTORY ROW */
 .history-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 15px 0;
   border-bottom: 1px solid #222;
+}
+
+.history-row .info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.history-row .info .name {
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+}
+
+.history-row .info .date {
+  font-size: 11px;
+  color: #64748b;
+  font-family: var(--font-mono);
 }
 
 .history-row .meta {
@@ -283,6 +375,7 @@ hr {
 /* TABS */
 .tabs { display: flex; padding: 10px; gap: 10px; }
 .tabs button {
-  all: unset; flex: 1; text-align: center; padding: 10px 0; border-radius: 6px; font-size: 14px; font-weight: 700; color: #64748b; cursor: pointer;
+  all: unset; flex: 1; text-align: center; padding: 10px 0; border-radius: 6px; font-size: 14px; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s ease;
 }
-.tabs button.active { background: var(--surface); color: var(--accent); border: 1px solid var(--border); }
+.tabs button.active { background: var(--surface); color: var(--accent); border: 1px solid var(--border); box-shadow: 0 0 10px rgba(0, 255, 255, 0.1); }
+.tabs button:hover:not(.active) { color: #fff; }
