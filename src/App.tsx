@@ -159,6 +159,12 @@ function App() {
     setActiveTab('quote');
   };
 
+  const deleteSavedQuote = (id: string) => {
+    if (confirm('Delete this quote?')) {
+      updateSettings({ savedQuotes: settings.savedQuotes.filter(q => q.id !== id) });
+    }
+  };
+
   const exportQuoteToText = () => {
     let text = `[LABOR]\n- Hours: ${laborHours}\n- Price: $${laborPrice.toFixed(2)}\n\n[MATERIALS]\n`;
     quoteItems.forEach(qItem => {
@@ -290,7 +296,7 @@ function App() {
 
             <section className="card">
               <h3>Line Items</h3>
-              {settings.persistentItems.map((item, idx) => (
+            {settings.persistentItems.map((item) => (
                 <div key={item.id} className="item-editor-card">
                   <div className="header">
                     <span className="drag">⠿</span>
