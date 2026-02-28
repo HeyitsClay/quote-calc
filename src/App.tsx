@@ -1,59 +1,17 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import * as Ariakit from "@ariakit/react";
+import { DEFAULT_SETTINGS } from './types';
+import type { AppSettings, QuoteItem, SavedQuote, PersistentItem } from './types';
+import { calculateLaborCost, calculateLaborPrice, calculateMaterials, generateId } from './utils';
+import { Button, Input, Card, Toast } from './components/Shared';
 import './App.css';
 
-interface PersistentItem {
-  id: string;
-  name: string;
-  cost: number;
-  useCustomMarkup: boolean;
-  customMarkup: number;
-}
-
-interface SavedQuote {
-  id: string;
-  name: string;
-  date: string;
-  items: QuoteItem[];
-  laborHours: number;
-  totalPrice: number;
-}
-
-interface AppSettings {
-  targetHourly: number;
-  wages: number[];
-  globalMarkup: number;
-  persistentItems: PersistentItem[];
-  savedQuotes: SavedQuote[];
-}
-
-interface QuoteItem {
-  itemId: string;
-  quantity: number;
-  customName?: string;
-  customCost?: number;
-}
-
-const DEFAULT_SETTINGS: AppSettings = {
-  targetHourly: 100,
-  wages: [25],
-  globalMarkup: 20,
-  persistentItems: [],
-  savedQuotes: [],
-};
-
 function App() {
-  const [activeTab, setActiveTab] = useState<'quote' | 'settings' | 'history'>('quote');
-  const [showNudge, setShowNudge] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem('quote_builder_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (!parsed.savedQuotes) parsed.savedQuotes = [];
-        return parsed;
-      }
-      return DEFAULT_SETTINGS;
-    } catch (e) {
+      return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    } catch {
       return DEFAULT_SETTINGS;
     }
   });
@@ -61,320 +19,522 @@ function App() {
   const [laborHours, setLaborHours] = useState<number>(0);
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
   const [quoteName, setQuoteName] = useState<string>('');
+  const [searchValue, setSearchValue] = useState('');
+  const [toasts, setToasts] = useState<{ id: string; message: string }[]>([]);
+
+  const filteredItems = useMemo(() => {
+    return settings.persistentItems.filter(item => 
+      item.name.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }, [settings.persistentItems, searchValue]);
+
+  const addToast = (message: string) => {
+    const id = generateId();
+    setToasts(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
 
   useEffect(() => {
     localStorage.setItem('quote_builder_settings', JSON.stringify(settings));
   }, [settings]);
 
-  useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile && !isStandalone) setShowNudge(true);
-  }, []);
-
   const updateSettings = (updates: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...updates }));
   };
 
-  const addPersistentItem = () => {
-    const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9);
-    const newItem: PersistentItem = { id, name: '', cost: 0, useCustomMarkup: false, customMarkup: 0 };
+  // --- Calculations ---
+  const laborCost = useMemo(() => calculateLaborCost(settings.wages, laborHours), [settings.wages, laborHours]);
+  const laborPrice = useMemo(() => calculateLaborPrice(laborHours, settings.targetHourly), [laborHours, settings.targetHourly]);
+  const laborProfit = laborPrice - laborCost;
+
+  const materials = useMemo(() => calculateMaterials(quoteItems, settings.persistentItems, settings.globalMarkup), [quoteItems, settings.persistentItems, settings.globalMarkup]);
+  const materialProfit = materials.price - materials.cost;
+  
+  const totalPrice = laborPrice + materials.price;
+  const totalCost = laborCost + materials.cost;
+  const totalProfit = totalPrice - totalCost;
+  const margin = totalPrice > 0 ? (totalProfit / totalPrice) * 100 : 0;
+
+  // --- Handlers ---
+  const handleAddPersistentItem = () => {
+    const newItem: PersistentItem = { id: generateId(), name: 'New Item', cost: 0, useCustomMarkup: false, customMarkup: 0 };
     updateSettings({ persistentItems: [...settings.persistentItems, newItem] });
   };
 
-  const updatePersistentItem = (id: string, updates: Partial<PersistentItem>) => {
+  const handleUpdatePersistentItem = (id: string, updates: Partial<PersistentItem>) => {
     updateSettings({
-      persistentItems: settings.persistentItems.map(item => item.id === id ? { ...item, ...updates } : item),
+      persistentItems: settings.persistentItems.map(item => item.id === id ? { ...item, ...updates } : item)
     });
   };
 
-  const removePersistentItem = (id: string) => {
-    if (confirm('Delete this item?')) {
-      updateSettings({ persistentItems: settings.persistentItems.filter(item => item.id !== id) });
+  const handleDeletePersistentItem = (id: string) => {
+    updateSettings({ persistentItems: settings.persistentItems.filter(item => item.id !== id) });
+  };
+
+  const handleAddToQuote = (itemId: string) => {
+    setQuoteItems([...quoteItems, { itemId, quantity: 1 }]);
+  };
+
+  const handleSaveQuote = () => {
+    if (!quoteName) {
+      addToast('Please enter a quote name.');
+      return;
     }
-  };
-
-  const addWage = () => updateSettings({ wages: [...settings.wages, 0] });
-  const updateWage = (index: number, val: number) => {
-    const newWages = [...settings.wages];
-    newWages[index] = val;
-    updateSettings({ wages: newWages });
-  };
-  const removeWage = (index: number) => {
-    if (confirm('Remove wage?')) updateSettings({ wages: settings.wages.filter((_, i) => i !== index) });
-  };
-
-  const addToQuote = (itemId: string) => setQuoteItems([...quoteItems, { itemId, quantity: 1 }]);
-  const updateQuoteItemQuantity = (index: number, quantity: number) => {
-    const newItems = [...quoteItems];
-    newItems[index].quantity = quantity;
-    setQuoteItems(newItems);
-  };
-  const removeFromQuote = (index: number) => setQuoteItems(quoteItems.filter((_, i) => i !== index));
-
-  const calculateLaborCost = () => {
-    if (settings.wages.length === 0 || laborHours === 0) return 0;
-    return settings.wages.reduce((total, wage) => total + (wage * (laborHours / settings.wages.length)), 0);
-  };
-
-  const calculateMaterialTotals = () => {
-    let cost = 0; let price = 0;
-    quoteItems.forEach(qItem => {
-      const pItem = settings.persistentItems.find(i => i.id === qItem.itemId);
-      if (!pItem) return;
-      const itemCost = pItem.cost * qItem.quantity;
-      const markup = pItem.useCustomMarkup ? pItem.customMarkup : settings.globalMarkup;
-      const itemPrice = itemCost * (1 + markup / 100);
-      cost += itemCost; price += itemPrice;
-    });
-    return { cost, price };
-  };
-
-  const laborCost = calculateLaborCost();
-  const laborPrice = laborHours * settings.targetHourly;
-  const materials = calculateMaterialTotals();
-  const totalPrice = laborPrice + materials.price;
-  const profit = totalPrice - (laborCost + materials.cost);
-  const margin = totalPrice > 0 ? (profit / totalPrice) * 100 : 0;
-
-  const saveCurrentQuote = () => {
-    if (!quoteName.trim()) return alert('Enter a name');
-    const newSavedQuote: SavedQuote = {
-      id: Math.random().toString(36).substring(2, 9),
+    const newQuote: SavedQuote = {
+      id: generateId(),
       name: quoteName,
       date: new Date().toLocaleDateString(),
       items: [...quoteItems],
       laborHours,
-      totalPrice: materials.price + laborPrice,
+      totalPrice
     };
-    updateSettings({ savedQuotes: [newSavedQuote, ...settings.savedQuotes] });
+    updateSettings({ savedQuotes: [newQuote, ...settings.savedQuotes] });
     setQuoteName('');
-    alert('Saved');
-  };
-
-  const loadSavedQuote = (quote: SavedQuote) => {
-    setQuoteItems(quote.items);
-    setLaborHours(quote.laborHours);
-    setQuoteName(quote.name);
-    setActiveTab('quote');
-  };
-
-  const deleteSavedQuote = (id: string) => {
-    if (confirm('Delete this quote?')) {
-      updateSettings({ savedQuotes: settings.savedQuotes.filter(q => q.id !== id) });
-    }
-  };
-
-  const exportQuoteToText = () => {
-    let text = `[LABOR]\n- Hours: ${laborHours}\n- Price: $${laborPrice.toFixed(2)}\n\n[MATERIALS]\n`;
-    quoteItems.forEach(qItem => {
-      const pItem = settings.persistentItems.find(i => i.id === qItem.itemId);
-      if (pItem) text += `- ${pItem.name}: x${qItem.quantity}\n`;
-    });
-    text += `\n[TOTAL]: $${totalPrice.toFixed(2)}`;
-    navigator.clipboard.writeText(text);
-    alert('Copied');
+    addToast('Quote saved to history!');
   };
 
   return (
     <div className="app-container">
-      {showNudge && (
-        <div className="install-nudge">
-          <p>Install App: Tap <b>Share</b> then <b>'Add to Home Screen'</b></p>
-          <button className="btn-danger" onClick={() => setShowNudge(false)}></button>
-        </div>
-      )}
-      <nav className="tabs">
-        <button className={activeTab === 'quote' ? 'active' : ''} onClick={() => setActiveTab('quote')}>Quote</button>
-        <button className={activeTab === 'history' ? 'active' : ''} onClick={() => setActiveTab('history')}>Saved</button>
-        <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>Settings</button>
-      </nav>
+      <Ariakit.TabProvider defaultSelectedId="quote">
+        <Ariakit.TabList className="tabs" aria-label="Main Navigation">
+          <Ariakit.Tab id="quote" className="tab-btn">Quote</Ariakit.Tab>
+          <Ariakit.Tab id="history" className="tab-btn">History</Ariakit.Tab>
+          <Ariakit.Tab id="settings" className="tab-btn">Settings</Ariakit.Tab>
+        </Ariakit.TabList>
 
-      <main className="content">
-        {activeTab === 'quote' ? (
-          <div className="view">
-            <section className="card">
-              <h3>Labor Cost</h3>
-              <div className="labor-split-container">
-                <div className="labor-left">
-                  <label>Total Hours</label>
-                  <input type="number" value={laborHours || ''} onChange={(e) => setLaborHours(Number(e.target.value))} />
+        <main className="content">
+          <Ariakit.TabPanel tabId="quote">
+            <Card title="Labor & Time">
+              <div style={{ display: 'flex', width: '100%', marginBottom: '1rem' }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Labor Cost</div>
+                  <div className="mono-val danger" style={{ fontSize: '0.85rem' }}>${laborCost.toFixed(2)}</div>
                 </div>
-                <div className="vertical-divider"></div>
-                <div className="labor-right">
-                  <div className="hud-data-row"><span>Wages:</span><span className="mono-val">${laborCost.toFixed(2)}</span></div>
-                  <div className="hud-data-row"><span>Billable:</span><span className="mono-val">${laborPrice.toFixed(2)}</span></div>
-                  <div className="hud-data-row"><span className="success">Profit:</span><span className="mono-val success">${(laborPrice - laborCost).toFixed(2)}</span></div>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Labor Profit</div>
+                  <div className="mono-val success" style={{ fontSize: '0.85rem' }}>${laborProfit.toFixed(2)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Labor Total</div>
+                  <div className="mono-val bold" style={{ fontSize: '0.85rem' }}>${laborPrice.toFixed(2)}</div>
                 </div>
               </div>
-            </section>
-
-            <section className="card">
-              <h3>Materials / Items</h3>
-              <div className="input-group">
-                <select onChange={(e) => { if (e.target.value) { addToQuote(e.target.value); e.target.value = ''; } }}>
-                  <option value="">Add from library...</option>
-                  {settings.persistentItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-                </select>
+              <div className="divider" style={{ marginBottom: '1.5rem' }} />
+              <div className="flex-center">
+                <div style={{ width: '85px' }}>
+                  <Input 
+                    label="Hours" 
+                    type="number" 
+                    className="input-lg"
+                    containerClassName="text-center"
+                    value={laborHours || ''} 
+                    onChange={e => setLaborHours(Number(e.target.value))} 
+                    style={{ textAlign: 'center' }}
+                  />
+                </div>
               </div>
-              <div className="items-list">
+            </Card>
+
+            <Card title="Materials & Parts">
+              {quoteItems.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', width: '100%', marginBottom: '1rem' }}>
+                    <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Materials Cost</div>
+                      <div className="mono-val danger" style={{ fontSize: '0.85rem' }}>${materials.cost.toFixed(2)}</div>
+                    </div>
+                    <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Materials Profit</div>
+                      <div className="mono-val success" style={{ fontSize: '0.85rem' }}>${materialProfit.toFixed(2)}</div>
+                    </div>
+                    <div style={{ flex: 1, textAlign: 'center' }}>
+                      <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Materials Total</div>
+                      <div className="mono-val bold" style={{ fontSize: '0.85rem' }}>${materials.price.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  <div className="divider" style={{ marginBottom: '1rem' }} />
+                </>
+              )}
+
+              <Ariakit.ComboboxProvider 
+                value={searchValue}
+                setValue={(val) => {
+                  // If the value matches an item name exactly, it's a selection
+                  const selectedItem = settings.persistentItems.find(i => i.name === val);
+                  if (selectedItem) {
+                    handleAddToQuote(selectedItem.id);
+                    setSearchValue(''); // Clear immediately
+                  } else {
+                    setSearchValue(val); // Otherwise just update typing
+                  }
+                }}
+              >
+                <div className="input-container">
+                  <Ariakit.Combobox 
+                    placeholder="Add Item from Library..." 
+                    className="select-trigger" 
+                  />
+                </div>
+                <Ariakit.ComboboxPopover gutter={4} sameWidth className="select-popover">
+                  {filteredItems.map((item, idx) => (
+                    <React.Fragment key={item.id}>
+                      <Ariakit.ComboboxItem 
+                        value={item.name} 
+                        className="combobox-item"
+                      >
+                        {item.name} (${item.cost.toFixed(2)})
+                      </Ariakit.ComboboxItem>
+                      {idx < filteredItems.length - 1 && <Ariakit.ComboboxSeparator className="combobox-separator" />}
+                    </React.Fragment>
+                  ))}
+                  {filteredItems.length === 0 && <div className="combobox-item">No items found</div>}
+                </Ariakit.ComboboxPopover>
+              </Ariakit.ComboboxProvider>
+
+              <div className="items-list" style={{ marginTop: '1rem' }}>
                 {quoteItems.map((qItem, idx) => {
                   const pItem = settings.persistentItems.find(i => i.id === qItem.itemId);
                   if (!pItem) return null;
                   const itemCost = pItem.cost * qItem.quantity;
                   const markup = pItem.useCustomMarkup ? pItem.customMarkup : settings.globalMarkup;
                   const itemPrice = itemCost * (1 + markup / 100);
-                  const itemProfit = itemPrice - itemCost;
                   return (
-                    <div key={idx} className="item-row-hud">
-                      <div className="item-name-meta">
-                        <span className="name">{pItem.name}</span>
-                        <span className="dimmed">Cost: ${pItem.cost.toFixed(2)} | Markup: {markup}%</span>
+                    <div key={idx} className="item-row align-center">
+                      <div className="item-name-col">
+                        <span className="item-name">{pItem.name}</span>
+                        <span className="item-subtext">Base: ${pItem.cost.toFixed(2)} | {markup}%</span>
                       </div>
-                      <div className="item-price-col">
-                        <span className="total-price mono-val">${itemPrice.toFixed(2)}</span>
-                        <span className="profit-sub success mono-val">(+${itemProfit.toFixed(2)})</span>
-                      </div>
-                      <div className="item-action-group">
-                        <input type="number" value={qItem.quantity} onChange={(e) => updateQuoteItemQuantity(idx, Number(e.target.value))} />
-                        <button className="btn-danger" onClick={() => removeFromQuote(idx)}></button>
+                      <div className="item-meta-col">
+                        <Input 
+                          type="number" 
+                          value={qItem.quantity} 
+                          className="input-qty"
+                          containerClassName="no-margin"
+                          style={{ width: '60px', textAlign: 'center' }}
+                          onChange={e => {
+                            const next = [...quoteItems];
+                            next[idx].quantity = Number(e.target.value);
+                            setQuoteItems(next);
+                          }}
+                        />
+                        <div style={{ textAlign: 'right', minWidth: '110px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
+                          <div style={{ fontSize: '0.75rem' }}>
+                            <span className="item-subtext">Cost:</span> <span className="mono-val danger">${itemCost.toFixed(2)}</span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem' }}>
+                            <span className="item-subtext">Profit:</span> <span className="mono-val success">${(itemPrice - itemCost).toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', minWidth: '100px' }}>
+                           <div className="item-subtext">Total Price</div>
+                           <div className="mono-val bold">${itemPrice.toFixed(2)}</div>
+                        </div>
+                        <Button variant="danger" size="sm" className="btn-icon" onClick={() => setQuoteItems(quoteItems.filter((_, i) => i !== idx))}>✕</Button>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </section>
+            </Card>
 
-            <section className="card summary-card">
-              <h3>Total Summary</h3>
-              <div className="hud-data-list">
-                <div className="hud-data-row"><span>Material Cost:</span><span className="mono-val">${materials.cost.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Labor Price:</span><span className="mono-val">${laborPrice.toFixed(2)}</span></div>
-                <hr/>
-                <div className="hud-data-row highlight"><span>Total Quote Amount:</span><span className="mono-val cyan">${totalPrice.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Net Profit:</span><span className="mono-val bold-success">${profit.toFixed(2)}</span></div>
-                <div className="hud-data-row"><span>Margin:</span><span className="mono-val bold-success">{margin.toFixed(1)}%</span></div>
-              </div>
-              <div className="footer-actions">
-                <div className="save-row">
-                  <input type="text" placeholder="Name this quote..." value={quoteName} onChange={(e) => setQuoteName(e.target.value)} />
-                  <button className="btn-primary" onClick={saveCurrentQuote}>SAVE</button>
+            <Card title="Summary" className="summary-card">
+              <div style={{ display: 'flex', width: '100%', marginBottom: '0.75rem' }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Material Cost</div>
+                  <div className="mono-val danger" style={{ fontSize: '0.85rem' }}>${materials.cost.toFixed(2)}</div>
                 </div>
-                <button className="btn-secondary full-width" onClick={exportQuoteToText}>EXPORT TO CLIPBOARD</button>
-              </div>
-            </section>
-          </div>
-        ) : activeTab === 'history' ? (
-          <div className="view">
-            <section className="card">
-              <div className="card-header-actions">
-                <h3>Quote History</h3>
-                <div className="header-btns">
-                  <button className="btn-secondary-sm" onClick={() => {
-                    const data = JSON.stringify(settings);
-                    const blob = new Blob([data], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `quote-calc-backup-${new Date().toISOString().split('T')[0]}.json`;
-                    a.click();
-                  }}>BACKUP</button>
-                  <button className="btn-secondary-sm" onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = (e) => {
-                        try {
-                          const parsed = JSON.parse(e.target?.result as string);
-                          updateSettings(parsed);
-                          alert('Restored');
-                        } catch (err) {
-                          alert('Invalid backup file');
-                        }
-                      };
-                      reader.readAsText(file);
-                    };
-                    input.click();
-                  }}>RESTORE</button>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Material Profit</div>
+                  <div className="mono-val success" style={{ fontSize: '0.85rem' }}>${materialProfit.toFixed(2)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Material Total</div>
+                  <div className="mono-val bold" style={{ fontSize: '0.85rem' }}>${materials.price.toFixed(2)}</div>
                 </div>
               </div>
-              <div className="history-list">
+              <div className="divider" />
+              <div style={{ display: 'flex', width: '100%', marginBottom: '1rem', marginTop: '0.75rem' }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Labor Cost</div>
+                  <div className="mono-val danger" style={{ fontSize: '0.85rem' }}>${laborCost.toFixed(2)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Labor Profit</div>
+                  <div className="mono-val success" style={{ fontSize: '0.85rem' }}>${laborProfit.toFixed(2)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div className="item-subtext" style={{ fontSize: '0.65rem' }}>Labor Total</div>
+                  <div className="mono-val bold" style={{ fontSize: '0.85rem' }}>${laborPrice.toFixed(2)}</div>
+                </div>
+              </div>
+              <div className="divider" />
+              <div style={{ display: 'flex', width: '100%', marginTop: '1rem' }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext">Net Profit</div>
+                  <div className="mono-val success bold" style={{ fontSize: '1.6rem' }}>${totalProfit.toFixed(2)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="item-subtext">Margin</div>
+                  <div className="mono-val success bold" style={{ fontSize: '1.6rem' }}>{margin.toFixed(1)}%</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div className="item-subtext">Total Amount</div>
+                  <div className="mono-val bold" style={{ fontSize: '1.6rem' }}>${totalPrice.toFixed(2)}</div>
+                </div>
+              </div>
+            </Card>
+
+            <Card title="Save or Export">
+              <div className="flex-row no-margin align-center">
+                <Input 
+                  placeholder="Quote Name..." 
+                  value={quoteName} 
+                  onChange={e => setQuoteName(e.target.value)} 
+                  containerClassName="flex-1 no-margin"
+                />
+                <Button onClick={handleSaveQuote} variant="primary">Save Quote</Button>
+              </div>
+              <Button 
+                variant="secondary" 
+                className="full-width" 
+                style={{ marginTop: '10px' }} 
+                onClick={() => {
+                  const materialDetails = quoteItems.map(qi => {
+                    const p = settings.persistentItems.find(i => i.id === qi.itemId);
+                    if (!p) return '';
+                    const cost = p.cost * qi.quantity;
+                    const markup = p.useCustomMarkup ? p.customMarkup : settings.globalMarkup;
+                    const price = cost * (1 + markup / 100);
+                    return `[${qi.quantity}x] ${p.name}\n    Cost: $${cost.toFixed(2)} | Profit: $${(price - cost).toFixed(2)} | Total: $${price.toFixed(2)}`;
+                  }).filter(Boolean).join('\n');
+
+                  const summary = [
+                    `--- QUOTE SUMMARY (${new Date().toLocaleDateString()}) ---`,
+                    `TOTAL AMOUNT: $${totalPrice.toFixed(2)}`,
+                    `NET PROFIT:   $${totalProfit.toFixed(2)} (${margin.toFixed(1)}%)`,
+                    '',
+                    `--- LABOR & TIME ---`,
+                    `Hours:        ${laborHours}`,
+                    `Labor Cost:   $${laborCost.toFixed(2)}`,
+                    `Labor Profit: $${laborProfit.toFixed(2)}`,
+                    `Labor Total:  $${laborPrice.toFixed(2)}`,
+                    '',
+                    `--- MATERIALS & PARTS ---`,
+                    materialDetails || 'No materials added.',
+                    '',
+                    `Materials Cost:   $${materials.cost.toFixed(2)}`,
+                    `Materials Profit: $${materialProfit.toFixed(2)}`,
+                    `Materials Total:  $${materials.price.toFixed(2)}`,
+                  ].join('\n');
+
+                  navigator.clipboard.writeText(summary);
+                  addToast('Detailed summary copied to clipboard!');
+                }}
+              >
+                Export to Clipboard
+              </Button>
+            </Card>
+          </Ariakit.TabPanel>
+
+          <Ariakit.TabPanel tabId="history">
+            <Card title="Saved Quotes">
+              <div className="items-list">
+                {settings.savedQuotes.length === 0 && (
+                  <div className="text-dim" style={{ textAlign: 'center', padding: '2rem' }}>No saved quotes yet.</div>
+                )}
                 {settings.savedQuotes.map(quote => (
-                  <div key={quote.id} className="history-row">
-                    <div className="info" onClick={() => loadSavedQuote(quote)}>
-                      <span className="name">{quote.name}</span>
-                      <span className="date">{quote.date}</span>
+                  <div 
+                    key={quote.id} 
+                    className="item-row align-center" 
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setQuoteItems(quote.items);
+                      setLaborHours(quote.laborHours);
+                      setQuoteName(quote.name);
+                      addToast(`Loaded quote: ${quote.name}`);
+                    }}
+                  >
+                    <div className="item-name-col">
+                      <span className="item-name">{quote.name}</span>
+                      <span className="item-subtext">{quote.date} • {quote.laborHours} hrs • {quote.items.length} items</span>
                     </div>
-                    <div className="meta">
-                      <span className="mono-val cyan">${quote.totalPrice.toFixed(2)}</span>
-                      <button className="btn-danger" onClick={() => deleteSavedQuote(quote.id)}></button>
+                    <div className="item-meta-col">
+                      <div style={{ textAlign: 'right', marginRight: '1rem' }}>
+                        <div className="item-subtext">Total Amount</div>
+                        <div className="mono-val bold">${quote.totalPrice.toFixed(2)}</div>
+                      </div>
+                      <Button 
+                        variant="danger" 
+                        size="sm" 
+                        className="btn-icon" 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Don't load the quote when deleting
+                          updateSettings({ savedQuotes: settings.savedQuotes.filter(q => q.id !== quote.id) });
+                        }}
+                      >
+                        ✕
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
-            </section>
-          </div>
-        ) : (
-          <div className="view">
-            <section className="card">
-              <h3>Global Settings</h3>
-              <div className="grid-2-col">
-                <label>Target Hourly Rate ($)</label>
-                <input type="number" value={settings.targetHourly} onChange={(e) => updateSettings({ targetHourly: Number(e.target.value) })} />
-              </div>
-              <div className="grid-2-col">
-                <label>Global Material Markup (%)</label>
-                <input type="number" value={settings.globalMarkup} onChange={(e) => updateSettings({ globalMarkup: Number(e.target.value) })} />
-              </div>
-            </section>
+            </Card>
+          </Ariakit.TabPanel>
 
-            <section className="card">
-              <h3>Labor Wages</h3>
-              {settings.wages.map((wage, idx) => (
-                <div key={idx} className="wage-row">
-                  <label>Hourly Wage {idx + 1}</label>
-                  <div className="wage-input-group">
-                    <input type="number" value={wage} onChange={(e) => updateWage(idx, Number(e.target.value))} />
-                    <button className="btn-danger" onClick={() => removeWage(idx)}></button>
+          <Ariakit.TabPanel tabId="settings">
+            <Card 
+              title="Global Pricing & Labor" 
+              actions={<Button variant="secondary" size="sm" onClick={() => updateSettings({ wages: [...settings.wages, 0] })}>+ Add Wage</Button>}
+            >
+              <div className="hud-grid grid-divider">
+                <div className="pricing-left">
+                  <div>
+                    <Input 
+                      label="Target Hourly Rate" 
+                      type="number" 
+                      className="w-3-digit"
+                      prefix="$"
+                      value={settings.targetHourly} 
+                      onChange={e => updateSettings({ targetHourly: Number(e.target.value) })}
+                    />
+                    <Input 
+                      label="Global Markup (%)" 
+                      type="number" 
+                      className="w-3-digit"
+                      value={settings.globalMarkup} 
+                      onChange={e => updateSettings({ globalMarkup: Number(e.target.value) })}
+                    />
                   </div>
                 </div>
-              ))}
-              <button className="btn-secondary" onClick={addWage}>+ ADD WAGE</button>
-            </section>
+                <div className="labor-right">
+                  <div>
+                    <div className="field-group">
+                      <label className="field-label">Labor Wages</label>
+                      <div className="items-list">
+                        {settings.wages.map((wage, idx) => (
+                          <div key={idx} className="flex-row no-margin align-center" style={{ gap: '8px', marginBottom: '8px' }}>
+                            <Input
+                              type="number"
+                              value={wage}
+                              className="w-3-digit"
+                              prefix="$"
+                              onChange={e => {
+                                const next = [...settings.wages];
+                                next[idx] = Number(e.target.value);
+                                updateSettings({ wages: next });
+                              }}
+                              style={{ marginBottom: 0 }}
+                            />
+                            <Button variant="danger" size="sm" className="btn-icon" onClick={() => updateSettings({ wages: settings.wages.filter((_, i) => i !== idx) })}>✕</Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>              </div>
+            </Card>
 
-            <section className="card">
-              <h3>Line Items</h3>
-            {settings.persistentItems.map((item) => (
-                <div key={item.id} className="item-editor-card">
-                  <div className="editor-top-row">
-                    <span className="drag-handle">⠿</span>
-                    <input type="text" value={item.name} onChange={(e) => updatePersistentItem(item.id, { name: e.target.value })} placeholder="Item Name" />
-                    <button className="btn-danger" onClick={() => removePersistentItem(item.id)}></button>
-                  </div>
-                  <div className="editor-bottom-row">
-                    <div className="input-group">
-                      <label className="field-label">COST</label>
-                      <input type="number" value={item.cost || ''} onChange={(e) => updatePersistentItem(item.id, { cost: Number(e.target.value) })} />
+            <Card title="Item Library" actions={<Button variant="secondary" size="sm" onClick={handleAddPersistentItem}>+ Add Item</Button>}>
+              <div className="items-list">
+                {settings.persistentItems.map(item => (
+                  <div key={item.id} className="card" style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', marginBottom: '1.5rem' }}>
+                    <div className="flex-row align-center" style={{ marginBottom: '24px', gap: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <Input 
+                          placeholder="Item Name" 
+                          value={item.name} 
+                          onChange={e => handleUpdatePersistentItem(item.id, { name: e.target.value })}
+                          containerClassName="no-margin"
+                        />
+                      </div>
+                      <Button variant="danger" size="sm" className="btn-icon" onClick={() => handleDeletePersistentItem(item.id)}>✕</Button>
                     </div>
-                    <div className="markup-lock">
-                      <label className="checkbox"><input type="checkbox" checked={item.useCustomMarkup} onChange={(e) => updatePersistentItem(item.id, { useCustomMarkup: e.target.checked })} />MARKUP %</label>
-                      {item.useCustomMarkup ? (
-                        <input type="number" value={item.customMarkup} onChange={(e) => updatePersistentItem(item.id, { customMarkup: Number(e.target.value) })} />
-                      ) : (
-                        <input type="text" value={`${settings.globalMarkup}% (Global)`} disabled />
-                      )}
+                    <div className="hud-grid">
+                      <Input 
+                        label="Cost" 
+                        type="number" 
+                        prefix="$"
+                        value={item.cost || ''} 
+                        onChange={e => handleUpdatePersistentItem(item.id, { cost: Number(e.target.value) })}
+                      />
+                      <div className="field-group">
+                        <Ariakit.CheckboxProvider 
+                          value={item.useCustomMarkup} 
+                          setValue={val => handleUpdatePersistentItem(item.id, { useCustomMarkup: !!val })}
+                        >
+                          <Ariakit.Checkbox render={<label className="checkbox-row" />}>
+                            <Ariakit.CheckboxCheck className="checkbox" />
+                            <span className="field-label" style={{ marginBottom: 0 }}>Custom Markup</span>
+                          </Ariakit.Checkbox>
+                        </Ariakit.CheckboxProvider>
+                        {item.useCustomMarkup ? (
+                          <input 
+                            className="input-field" 
+                            type="number" 
+                            value={item.customMarkup} 
+                            onChange={e => handleUpdatePersistentItem(item.id, { customMarkup: Number(e.target.value) })}
+                          />
+                        ) : (
+                          <input className="input-field input-dimmed" value={`${settings.globalMarkup}% (Global)`} disabled />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              <button className="btn-secondary" onClick={addPersistentItem}>+ ADD ITEM</button>
-            </section>
-          </div>
-        )}
-      </main>
+                ))}
+              </div>
+            </Card>
+
+            <Card title="Data Management">
+              <div className="text-dim" style={{ marginBottom: '1rem' }}>
+                Backup or transfer your item library and pricing settings via the clipboard.
+              </div>
+              <div className="flex-row no-margin">
+                <Button 
+                  variant="secondary" 
+                  className="full-width" 
+                  onClick={() => {
+                    const data = JSON.stringify(settings, null, 2);
+                    navigator.clipboard.writeText(data);
+                    addToast('Settings copied to clipboard!');
+                  }}
+                >
+                  Export Settings
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="full-width" 
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      const parsed = JSON.parse(text);
+                      if (parsed && typeof parsed === 'object' && 'targetHourly' in parsed) {
+                        if (confirm('Importing will overwrite your current settings and item library. Continue?')) {
+                          setSettings(parsed);
+                          addToast('Settings imported successfully!');
+                        }
+                      } else {
+                        addToast('Invalid settings data in clipboard.');
+                      }
+                    } catch (err) {
+                      addToast('Failed to read from clipboard.');
+                    }
+                  }}
+                >
+                  Import Settings
+                </Button>
+              </div>
+            </Card>
+          </Ariakit.TabPanel>
+        </main>
+      </Ariakit.TabProvider>
+
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <Toast key={toast.id} message={toast.message} />
+        ))}
+      </div>
     </div>
   );
 }
