@@ -16,9 +16,17 @@ function App() {
     }
   });
 
-  const [laborHours, setLaborHours] = useState<number>(0);
-  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
-  const [quoteName, setQuoteName] = useState<string>('');
+  const [laborHours, setLaborHours] = useState<number>(() => {
+    const saved = localStorage.getItem('quote_builder_hours');
+    return saved ? Number(saved) : 0;
+  });
+  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>(() => {
+    const saved = localStorage.getItem('quote_builder_items');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [quoteName, setQuoteName] = useState<string>(() => {
+    return localStorage.getItem('quote_builder_name') || '';
+  });
   const [searchValue, setSearchValue] = useState('');
   const [toasts, setToasts] = useState<{ id: string; message: string }[]>([]);
 
@@ -39,6 +47,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem('quote_builder_settings', JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem('quote_builder_hours', laborHours.toString());
+    localStorage.setItem('quote_builder_items', JSON.stringify(quoteItems));
+    localStorage.setItem('quote_builder_name', quoteName);
+  }, [laborHours, quoteItems, quoteName]);
 
   const updateSettings = (updates: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...updates }));
@@ -93,6 +107,15 @@ function App() {
     updateSettings({ savedQuotes: [newQuote, ...settings.savedQuotes] });
     setQuoteName('');
     addToast('Quote saved to history!');
+  };
+
+  const handleClearQuote = () => {
+    if (confirm('Are you sure you want to clear the current quote? This cannot be undone.')) {
+      setQuoteName('');
+      setQuoteItems([]);
+      setLaborHours(0);
+      addToast('Quote cleared.');
+    }
   };
 
   return (
@@ -340,6 +363,16 @@ function App() {
                 }}
               >
                 Export to Clipboard
+              </Button>
+            </Card>
+
+            <Card>
+              <Button 
+                variant="danger" 
+                className="full-width" 
+                onClick={handleClearQuote}
+              >
+                Clear Quote
               </Button>
             </Card>
           </Ariakit.TabPanel>
