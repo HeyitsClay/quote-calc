@@ -434,7 +434,7 @@ function App() {
                   />
                   <button className="btn-primary" onClick={saveCurrentQuote}>Save</button>
                 </div>
-                <button className="btn-secondary" style={{ marginTop: '0.5rem' }} onClick={exportQuoteToText}>Export to Clipboard (Text)</button>
+                <button className="btn-secondary" style={{ marginTop: '0.5rem' }} onClick={exportQuoteToText}>Export to Clipboard</button>
               </div>
             </section>
           </div>
