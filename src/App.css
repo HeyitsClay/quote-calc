@@ -191,13 +191,14 @@ input[type=number] {
 
 .pricing-left, .labor-right {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .pricing-left > div, .labor-right > div {
   width: 100%;
-  max-width: 240px;
+  max-width: 220px;
+  text-align: left;
 }
 
 .input-dimmed {
