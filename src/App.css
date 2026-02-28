@@ -380,7 +380,7 @@ input[type=number] {
   }
 
   /* Utility to override inline widths on mobile */
-  .mobile-width-qty { width: 45px !important; }
+  .mobile-width-qty { width: 55px !important; }
   .mobile-min-width-stack { min-width: 85px !important; }
   .mobile-min-width-total { min-width: 80px !important; }
 

@@ -160,7 +160,7 @@ function App() {
               </div>
             </Card>
 
-            <Card title="Materials & Parts">
+            <Card title="Materials">
               {quoteItems.length > 0 && (
                 <>
                   <div style={{ display: 'flex', width: '100%', marginBottom: '1rem' }}>
@@ -235,7 +235,7 @@ function App() {
                           value={qItem.quantity} 
                           className="input-qty mobile-width-qty"
                           containerClassName="no-margin"
-                          style={{ width: '60px', textAlign: 'center' }}
+                          style={{ width: '75px', textAlign: 'center' }}
                           onChange={e => {
                             const next = [...quoteItems];
                             next[idx].quantity = Number(e.target.value);
@@ -350,7 +350,7 @@ function App() {
                     `Labor Profit: $${laborProfit.toFixed(2)}`,
                     `Labor Total:  $${laborPrice.toFixed(2)}`,
                     '',
-                    `--- MATERIALS & PARTS ---`,
+                    `--- MATERIALS ---`,
                     materialDetails || 'No materials added.',
                     '',
                     `Materials Cost:   $${materials.cost.toFixed(2)}`,
