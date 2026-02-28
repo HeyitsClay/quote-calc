@@ -411,17 +411,17 @@ function App() {
             <section className="card summary-card">
               <h3>Total Summary</h3>
               <div className="summary-grid">
-                <span>Material Cost:</span> <span>${materials.cost.toFixed(2)}</span>
-                <span>Material Price:</span> <span>${materials.price.toFixed(2)}</span>
+                <span className="label">Material Cost:</span> <span className="value">${materials.cost.toFixed(2)}</span>
+                <span className="label">Material Price:</span> <span className="value">${materials.price.toFixed(2)}</span>
                 <hr />
-                <span>Labor Cost (Wages):</span> <span>${laborCost.toFixed(2)}</span>
-                <span>Labor Price (Billable):</span> <span>${laborPrice.toFixed(2)}</span>
+                <span className="label">Labor Cost (Wages):</span> <span className="value">${laborCost.toFixed(2)}</span>
+                <span className="label">Labor Price (Billable):</span> <span className="value">${laborPrice.toFixed(2)}</span>
                 <hr />
-                <span>Total Project Cost:</span> <span>${totalCost.toFixed(2)}</span>
-                <span className="highlight">Total Quote Amount:</span> <span className="highlight">${totalPrice.toFixed(2)}</span>
+                <span className="label">Total Project Cost:</span> <span className="value">${totalCost.toFixed(2)}</span>
+                <span className="label highlight">Total Quote Amount:</span> <span className="value highlight">${totalPrice.toFixed(2)}</span>
                 <hr />
-                <span>Project Net Profit:</span> <span className="profit-text">${profit.toFixed(2)}</span>
-                <span>Profit Margin:</span> <span className="profit-text">{margin.toFixed(1)}%</span>
+                <span className="label">Project Net Profit:</span> <span className="value profit-text">${profit.toFixed(2)}</span>
+                <span className="label">Profit Margin:</span> <span className="value profit-text">{margin.toFixed(1)}%</span>
               </div>
               
               <div className="save-quote-area">
